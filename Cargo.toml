@@ -1,0 +1,13 @@
+[package]
+name = "db-changes-server"
+version = "0.1.0"
+authors = ["S@P <lorenzotorracchi@mail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rocket = "0.4.4"
+rocket_contrib = "0.4.4"
+serde = "1.0.106"
+argh = "0.1.3"
