@@ -42,8 +42,8 @@ fn main() {
             None => {
                 match fs::canonicalize(dirs::home_dir().unwrap())
                 {
-                    Ok(hd) => VERSION_API.apps_folder.push_str(format!("{:?}/.db-changes/apps", &hd).as_str()),
-                    Err(_e) => panic!("Cannot set default"),
+                    Ok(hd) => VERSION_API.apps_folder.push_str(format!("{:?}/.db-changes/apps", hd).replace("\"", "").as_str()),
+                    Err(_e) => panic!("Cannot set default apps path"),
                 }
             }
         }
