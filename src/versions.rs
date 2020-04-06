@@ -1,15 +1,20 @@
 use std::fs;
 
 pub struct Versions {
-    pub appsFolder: String,
+    pub apps_folder: String,
 }
 
 impl Versions {
-    pub fn list(&self, appName: String) -> Vec<String> {
-        let paths = fs::read_dir(format!("{}/{}", self.appsFolder, appName)).unwrap();
+    pub fn list(&self, app_name: String) -> Vec<String> {
+        let dir = format!("{}/{}", self.apps_folder, app_name);
+        let error_msg = format!("cannot read {}", dir);
+        let paths = fs::read_dir(dir).expect(error_msg.as_str());
         let mut versions = Vec::new();
         for path in paths {
-            versions.push(path.unwrap().path().display());
+            match path.unwrap().file_name().into_string() {
+                Ok(x) => versions.push(x),
+                Err(_e) => continue,
+            }
         }
         versions
     }
