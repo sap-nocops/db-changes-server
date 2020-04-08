@@ -3,50 +3,36 @@ extern crate dirs;
 #[macro_use]
 extern crate rocket;
 
-use std::fs;
-
 use argh::FromArgs;
-//use serde::Serialize;
-use rocket_contrib::json::Json;
-
-use versions::Versions;
-
-mod versions;
+mod api;
+use api::Api;
 
 #[derive(FromArgs)]
 /// Db changes configuration.
 struct Arguments {
-    /// apps folder
+    /// server port. default: 8000
     #[argh(option)]
-    folder: Option<String>,
-}
-
-static mut VERSION_API: Versions = Versions {
-    apps_folder: String::new()
-};
-
-#[get("/<app_name>")]
-fn versions(app_name: String) -> Json<Vec<String>> {
-    unsafe {
-        Json(
-            VERSION_API.list(app_name)
-        )
-    }
+    port: Option<u32>,
+    /// cache refresh time in seconds. default: 3600
+    #[argh(option)]
+    refresh_time: Option<u32>,
 }
 
 fn main() {
+    let port: u32;
+    let refresh_time: u32;
     let args: Arguments = argh::from_env();
-    unsafe {
-        match args.folder {
-            Some(x) => VERSION_API.apps_folder.push_str(&x),
-            None => {
-                match fs::canonicalize(dirs::home_dir().unwrap())
-                {
-                    Ok(hd) => VERSION_API.apps_folder.push_str(format!("{:?}/.db-changes/apps", hd).replace("\"", "").as_str()),
-                    Err(_e) => panic!("Cannot set default apps path"),
-                }
-            }
-        }
+    match args.port {
+        Some(x) => port = x,
+        None => port = 8000,
     }
-    rocket::ignite().mount("/versions", routes![versions]).launch();
+    match args.refresh_time {
+        Some(x) => refresh_time = x,
+        None => refresh_time = 3600,
+    }
+    let api: Api = Api{
+        port,
+        refresh_time,
+    };
+    api.init();
 }

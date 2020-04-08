@@ -1,12 +1,12 @@
 use std::fs;
 
 pub struct Versions {
-    pub apps_folder: String,
+    pub apps_path: String,
 }
 
 impl Versions {
     pub fn list(&self, app_name: String) -> Vec<String> {
-        let dir = format!("{}/{}", self.apps_folder, app_name);
+        let dir = format!("{}/{}", self.apps_path, app_name);
         let error_msg = format!("cannot read {}", dir);
         let paths = fs::read_dir(dir).expect(error_msg.as_str());
         let mut versions = Vec::new();
