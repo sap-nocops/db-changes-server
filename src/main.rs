@@ -29,7 +29,7 @@ fn main() {
     let user_home: String;
     match fs::canonicalize(dirs::home_dir().unwrap())
     {
-        Ok(hd) => user_home = hd.replace("\"", ""),
+        Ok(hd) => user_home = hd.as_path().display().to_string().replace("\"", ""),
         Err(_e) => panic!("Cannot set default db path"),
     }
     let port: u32;
