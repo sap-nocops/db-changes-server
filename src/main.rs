@@ -17,15 +17,25 @@ struct Arguments {
     /// cache refresh time in seconds. default: 3600
     #[argh(option)]
     refresh_time: Option<u32>,
+    /// path to db. default: ~/.db-changes/changes.db
+    #[argh(option)]
+    db_path: Option<String>,
     /// path to apps db changes. default: ~/.db-changes/apps
     #[argh(option)]
     apps_path: Option<String>,
 }
 
 fn main() {
+    let user_home: String;
+    match fs::canonicalize(dirs::home_dir().unwrap())
+    {
+        Ok(hd) => user_home = hd.replace("\"", ""),
+        Err(_e) => panic!("Cannot set default db path"),
+    }
     let port: u32;
     let refresh_time: u32;
     let apps_path: String;
+    let db_path: String;
     let args: Arguments = argh::from_env();
     match args.port {
         Some(x) => port = x,
@@ -35,20 +45,19 @@ fn main() {
         Some(x) => refresh_time = x,
         None => refresh_time = 3600,
     }
+    match args.db_path {
+        Some(x) => db_path = x,
+        None => db_path = format!("{}/.db-changes/changes.db", user_home),
+    }
     match args.apps_path {
         Some(x) => apps_path = x,
-        None => {
-            match fs::canonicalize(dirs::home_dir().unwrap())
-            {
-                Ok(hd) => apps_path = format!("{:?}/.db-changes/apps", hd).replace("\"", ""),
-                Err(_e) => panic!("Cannot set default apps path"),
-            }
-        },
+        None => apps_path = format!("{}/.db-changes/apps", user_home),
     }
     let api: Api = Api{
         port,
         refresh_time,
-        apps_path
+        apps_path,
+        db_path,
     };
     api.init();
 }
