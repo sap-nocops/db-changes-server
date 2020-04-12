@@ -1,4 +1,3 @@
-use std::fs;
 use rusqlite::{params, Connection};
 
 #[derive(Debug)]

@@ -14,9 +14,9 @@ fn list_versions(app_name: String, app_version: String, versions_api: State<'_, 
     )
 }
 
-#[get("/<app_name>/<app_version>/<db_version>")]
-fn changes(app_name: String, app_version: String, db_version: String, changes_api: State<'_, Changes>) -> String {
-    changes_api.get(app_name, app_version, db_version)
+#[get("/<app_name>/<db_version>")]
+fn changes(app_name: String, db_version: String, changes_api: State<'_, Changes>) -> String {
+    changes_api.get(app_name, db_version)
 }
 
 pub struct Api {
@@ -38,6 +38,7 @@ impl Api {
             .mount("/versions", routes![list_versions])
             .mount("/changes", routes![changes])
             .manage(versions_api)
+            .manage(changes)
             .launch();
     }
 }

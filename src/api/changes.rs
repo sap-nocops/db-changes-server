@@ -1,22 +1,16 @@
-use std::fs;
+use std::fs::File;
+use std::io::prelude::*;
 
 pub struct Changes {
     pub apps_path: String,
 }
 
 impl Changes {
-    pub fn get(&self, app_name: String, app_version: String, db_version: String) -> String {
-        /*let dir = format!("{}/{}/{}", self.apps_path, app_name, app_version);
-        let error_msg = format!("cannot read {}", dir);
-        let paths = fs::read_dir(dir).expect(error_msg.as_str());
-        let mut versions = Vec::new();
-        for path in paths {
-            match path.unwrap().file_name().into_string() {
-                Ok(x) => versions.push(x),
-                Err(_e) => continue,
-            }
-        }
-        versions*/
-        String::from("")
+    pub fn get(&self, app_name: String, db_version: String) -> String {
+        let error_msg = "cannot get changes";
+        let mut file = File::open(format!("{}/{}/{}", self.apps_path, app_name, db_version)).expect(error_msg);
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).expect(error_msg);
+        contents
     }
 }
