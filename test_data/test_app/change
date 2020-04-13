@@ -1,0 +1,1 @@
+INSERT INTO frattaglie (id, nome) VALUES (1, 'lampredotto');
