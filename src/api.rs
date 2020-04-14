@@ -27,7 +27,7 @@ pub enum StatusChanges {
 
 #[get("/<app_name>/<app_version>")]
 fn list_versions(app_name: String, app_version: String, versions_api: State<'_, Versions>) -> StatusVersion {
-    match versions_api.list(app_name.clone(), app_version.clone()) {
+    match versions_api.list(&app_name, &app_version) {
         Ok(versions) => {
             if versions.len() == 0 {
                 return StatusVersion::HttpNotFound(format!("app {} {} not found", app_name, app_version))
@@ -40,7 +40,7 @@ fn list_versions(app_name: String, app_version: String, versions_api: State<'_, 
 
 #[get("/<app_name>/<db_version>")]
 fn changes(app_name: String, db_version: String, changes_api: State<'_, Changes>) -> StatusChanges {
-    match changes_api.get(app_name.clone(), db_version.clone()) {
+    match changes_api.get(&app_name, &db_version) {
         Ok(val) => StatusChanges::HttpOk(val),
         Err(_e) => StatusChanges::HttpNotFound(format!("db version {} of app {}", db_version, app_name)),
     }

@@ -7,7 +7,7 @@ pub struct Changes {
 }
 
 impl Changes {
-    pub fn get(&self, app_name: String, db_version: String) -> Result<String, Error> {
+    pub fn get(&self, app_name: &str, db_version: &str) -> Result<String, Error> {
         let mut file = File::open(format!("{}/{}/{}", self.apps_path, app_name, db_version))?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
@@ -25,7 +25,7 @@ mod tests {
             apps_path: String::from("test_data")
         };
 
-        match changes_api.get(String::from("test_app"), String::from("change")) {
+        match changes_api.get("test_app", "change") {
             Ok(val) => assert_eq!(val, String::from("INSERT INTO frattaglie (id, nome) VALUES (1, 'lampredotto');\n")),
             Err(_e) => assert!(false),
         }
@@ -37,7 +37,7 @@ mod tests {
             apps_path: String::from("test_data")
         };
 
-        match changes_api.get(String::from("non_app"), String::from("change")) {
+        match changes_api.get("non_app", "change") {
             Ok(_val) => assert!(false),
             Err(_e) => assert!(true),
         }
@@ -49,7 +49,7 @@ mod tests {
             apps_path: String::from("test_data")
         };
 
-        match changes_api.get(String::from("test_app"), String::from("non_change")) {
+        match changes_api.get("test_app", "non_change") {
             Ok(_val) => assert!(false),
             Err(_e) => assert!(true),
         }

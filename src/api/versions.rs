@@ -10,8 +10,8 @@ pub struct Versions {
 }
 
 impl Versions {
-    pub fn list(&self, app_name: String, app_version: String) -> Result<Vec<String>, Error> {
-        let conn = Connection::open(self.db_path.clone())?;
+    pub fn list(&self, app_name: &str, app_version: &str) -> Result<Vec<String>, Error> {
+        let conn = Connection::open(&self.db_path)?;
         let mut stmt = conn.prepare("SELECT dv.version FROM apps a JOIN apps_db_versions adv
          ON a.id = adv.app_id JOIN db_versions dv ON dv.id = adv.db_id
          WHERE a.name = ? AND a.version = ?")?;
@@ -39,11 +39,9 @@ mod tests {
             db_path: String::from("test_data/test.db")
         };
 
-        let db_versions = version_api.list(String::from("caponzoniere"), String::from("1.0.0"));
+        let db_versions = version_api.list("caponzoniere", "1.0.0");
 
-        let mut expected = Vec::new();
-        expected.push(String::from("v1"));
-        assert_eq!(db_versions, Ok(expected));
+        assert_eq!(db_versions, Ok(vec![String::from("v1")]));
     }
 
     #[test]
@@ -52,7 +50,7 @@ mod tests {
             db_path: String::from("test_data/test.db")
         };
 
-        let db_versions = version_api.list(String::from("non-existing-app"), String::from("1.0.0"));
+        let db_versions = version_api.list("non-existing-app", "1.0.0");
 
         assert_eq!(db_versions, Ok(Vec::new()));
     }
@@ -63,7 +61,7 @@ mod tests {
             db_path: String::from("test_data/test.db")
         };
 
-        let db_versions = version_api.list(String::from("caponzoniere"), String::from("non_existing"));
+        let db_versions = version_api.list("caponzoniere", "non_existing");
 
         assert_eq!(db_versions, Ok(Vec::new()));
     }
