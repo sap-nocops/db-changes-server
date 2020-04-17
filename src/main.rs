@@ -13,10 +13,10 @@ use std::fs;
 struct Arguments {
     /// server port. default: 8000
     #[argh(option)]
-    port: Option<u32>,
+    port: Option<u16>,
     /// cache refresh time in seconds. default: 3600
     #[argh(option)]
-    refresh_time: Option<u32>,
+    refresh_time: Option<u64>,
     /// path to db. default: ~/.db-changes/changes.db
     #[argh(option)]
     db_path: Option<String>,
@@ -32,8 +32,8 @@ fn main() {
         Ok(hd) => user_home = hd.as_path().display().to_string().replace("\"", ""),
         Err(_e) => panic!("Cannot set default db path"),
     }
-    let port: u32;
-    let refresh_time: u32;
+    let port: u16;
+    let refresh_time: u64;
     let apps_path: String;
     let db_path: String;
     let args: Arguments = argh::from_env();
