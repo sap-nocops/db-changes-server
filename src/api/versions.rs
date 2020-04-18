@@ -1,48 +1,38 @@
 use rusqlite::{params, Connection, Error};
-use super::cache::Cache;
 
 #[derive(Debug)]
 struct DbVersion {
     version: String,
 }
 
-pub struct Versions<'a> {
-    db_path: String,
-    cache: &'a Cache
+pub struct Versions {
+    db_path: String
 }
 
 impl Versions {
-    pub fn new(db_path: &str, cache: &Cache) -> Versions {
+    pub fn new(db_path: &str) -> Versions {
         Versions {
-            db_path: db_path.to_string(),
-            cache
+            db_path: db_path.to_string()
         }
     }
 
     pub fn list(&self, app_name: &str, app_version: &str) -> Result<Vec<String>, Error> {
-        let key = vec!["versions", app_name, app_version];
-        match self.cache.get(&key) {
-            Some(value) => Ok(value.clone()),
-            None => {
-                let conn = Connection::open(&self.db_path)?;
-                let mut stmt = conn.prepare("
+        let conn = Connection::open(&self.db_path)?;
+        let mut stmt = conn.prepare("
                     SELECT dv.version FROM apps a JOIN apps_db_versions adv
                     ON a.id = adv.app_id JOIN db_versions dv ON dv.id = adv.db_id
                     WHERE a.name = ? AND a.version = ?")?;
-                let db_version_iter = stmt.query_map(params![app_name, app_version], |row| {
-                    Ok(DbVersion { version: row.get(0)? })
-                })?;
-                let mut db_versions = Vec::new();
-                for db_version in db_version_iter {
-                    match db_version {
-                        Ok(dv) => db_versions.push(dv.version),
-                        Err(_e) => continue,
-                    }
-                }
-                self.cache.insert(&key, &db_versions);
-                Ok(db_versions)
+        let db_version_iter = stmt.query_map(params![app_name, app_version], |row| {
+            Ok(DbVersion { version: row.get(0)? })
+        })?;
+        let mut db_versions = Vec::new();
+        for db_version in db_version_iter {
+            match db_version {
+                Ok(dv) => db_versions.push(dv.version),
+                Err(_e) => continue,
             }
         }
+        Ok(db_versions)
     }
 }
 
@@ -53,8 +43,7 @@ mod tests {
     #[test]
     fn list_db_versions_for_app() {
         let version_api = Versions {
-            db_path: String::from("test_data/test.db"),
-            cache: Arc::new(Mutex::new(HashMap::new()))
+            db_path: String::from("test_data/test.db")
         };
 
         let db_versions = version_api.list("caponzoniere", "1.0.0");
@@ -65,8 +54,7 @@ mod tests {
     #[test]
     fn empty_when_non_existing_app() {
         let version_api = Versions {
-            db_path: String::from("test_data/test.db"),
-            cache: Arc::new(Mutex::new(HashMap::new()))
+            db_path: String::from("test_data/test.db")
         };
 
         let db_versions = version_api.list("non-existing-app", "1.0.0");
@@ -77,8 +65,7 @@ mod tests {
     #[test]
     fn empty_when_non_existing_app_version() {
         let version_api = Versions {
-            db_path: String::from("test_data/test.db"),
-            cache: Arc::new(Mutex::new(HashMap::new()))
+            db_path: String::from("test_data/test.db")
         };
 
         let db_versions = version_api.list("caponzoniere", "non_existing");
