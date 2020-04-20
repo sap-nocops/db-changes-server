@@ -1,6 +1,8 @@
 use rocket_contrib::json::Json;
 use rocket::State;
 use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
 
 pub mod versions;
 pub mod changes;
@@ -72,7 +74,15 @@ pub struct Api {
 
 impl Api {
     pub fn init(&self) {
-        let cache = Arc::new(Mutex::new(Cache::new(self.refresh_time)));
+        let cache = Arc::new(Mutex::new(Cache::new()));
+        let cloned_cache = Arc::clone(&cache);
+        let refresh_time = self.refresh_time;
+        thread::spawn(move || {
+            loop {
+                thread::sleep(Duration::from_secs(refresh_time));
+                cloned_cache.lock().unwrap().clear();
+            }
+        });
         let versions_api = Versions::new(&self.db_path);
         let changes = Changes::new(&self.apps_path);
         rocket::ignite()

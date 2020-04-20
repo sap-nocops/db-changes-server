@@ -1,14 +1,12 @@
 use std::collections::HashMap;
 
 pub struct Cache {
-    refresh_time: u64,
     cache: HashMap<Vec<String>, Vec<String>>
 }
 
 impl Cache {
-    pub fn new(refresh_time: u64) -> Cache {
+    pub fn new() -> Cache {
         Cache{
-            refresh_time,
             cache: HashMap::new()
         }
     }
@@ -33,5 +31,10 @@ impl Cache {
 
     pub fn insert(&mut self, key: Vec<String>, value: String) {
         self.cache.insert(key, vec![value]);
+    }
+
+    pub fn clear(&mut self) {
+        self.cache.clear();
+        println!("cache cleared")
     }
 }
