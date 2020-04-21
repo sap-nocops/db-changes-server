@@ -1,4 +1,6 @@
 use rusqlite::{params, Connection, Error};
+use mockall::*;
+use mockall::predicate::*;
 
 #[derive(Debug)]
 struct DbVersion {
@@ -9,6 +11,7 @@ pub struct Versions {
     db_path: String
 }
 
+#[automock]
 impl Versions {
     pub fn new(db_path: &str) -> Versions {
         Versions {

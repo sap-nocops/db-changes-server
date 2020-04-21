@@ -1,9 +1,12 @@
 use std::collections::HashMap;
+use mockall::*;
+use mockall::predicate::*;
 
 pub struct Cache {
     cache: HashMap<Vec<String>, Vec<String>>
 }
 
+#[automock]
 impl Cache {
     pub fn new() -> Cache {
         Cache{

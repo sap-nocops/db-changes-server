@@ -94,3 +94,26 @@ impl Api {
             .launch();
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use versions::MockVersions;
+    use cache::MockCache;
+
+    #[test]
+    fn list_versions_use_cache() {
+        let mock_ver = MockVersions::default();
+        let mock_cache = MockCache::new();
+        let state_ver = match State::from(&mock_ver) {
+            Some(val) => val,
+            None => panic!("cannot build version state"),
+        };
+        let state_cache = match State::from(&Arc::new(Mutex::new(mock_cache))){
+            Some(val) => val,
+            None => panic!("cannot build cache state"),
+        };
+        list_versions(String::from("name"), String::from("1.0"), state_cache, state_ver);
+    }
+}
