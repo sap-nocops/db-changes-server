@@ -95,25 +95,36 @@ impl Api {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use versions::MockVersions;
     use cache::MockCache;
+    use mockall::predicate;
 
     #[test]
-    fn list_versions_use_cache() {
-        let mock_ver = MockVersions::default();
-        let mock_cache = MockCache::new();
-        let state_ver = match State::from(&mock_ver) {
-            Some(val) => val,
-            None => panic!("cannot build version state"),
-        };
-        let state_cache = match State::from(&Arc::new(Mutex::new(mock_cache))){
-            Some(val) => val,
-            None => panic!("cannot build cache state"),
-        };
-        list_versions(String::from("name"), String::from("1.0"), state_cache, state_ver);
+    fn list_versions_insert_in_cache_when_not_found() {
+        let app_name = String::from("name");
+        let app_ver = String::from("1.0");
+        let key = vec![String::from("versions"), app_name.clone(), app_ver.clone()];
+        let value = vec!["v1".to_string(), "v2".to_string()];
+        let mock_ver = MockVersions::default()
+            .expect_list()
+            .with(predicate::eq(app_name.as_str()), predicate::eq(app_ver.as_str()))
+            .times(1)
+            .returning(|n, v| Ok(value.clone()));
+        let mock_cache = MockCache::default()
+            .expect_get_vec()
+            .with(predicate::eq(key.clone()))
+            .times(1)
+            .returning(|v| None);
+        /*mock_cache.expect_insert_vec()
+            .with(predicate::eq(key), predicate::eq(value.clone()))
+            .times(1);*/
+        let rocket = rocket::ignite().manage(mock_ver).manage(Arc::new(Mutex::new(mock_cache)));
+        let state_cache = State::from(&rocket).unwrap();
+        let state_ver = State::from(&rocket).unwrap();
+
+        list_versions(app_name.clone(), app_ver.clone(), state_cache, state_ver);
     }
 }
