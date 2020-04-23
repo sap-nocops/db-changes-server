@@ -31,7 +31,7 @@ pub enum StatusChanges {
 }
 
 #[get("/<app_name>/<app_version>")]
-fn list_versions(app_name: String, app_version: String, cache: State<'_, Arc<Mutex<Cache>>>, versions_api: State<'_, Versions>) -> StatusVersion {
+fn list_versions(app_name: String, app_version: String, cache: State<Arc<Mutex<Cache>>>, versions_api: State<Versions>) -> StatusVersion {
     let key = vec![String::from("versions"), app_name.clone(), app_version.clone()];
     let mut m_cache = cache.lock().unwrap();
     match m_cache.get_vec(&key) {
@@ -100,31 +100,53 @@ mod tests {
     use super::*;
     use versions::MockVersions;
     use cache::MockCache;
-    use mockall::predicate;
+    use mockall::predicate::eq;
+
+    struct Testolo {
+        a:i32
+    }
+
+    impl Testolo{
+        fn ciao(&self) -> String {
+            format!("ciao: {}", self.a)
+        }
+    }
+
+    #[get("/")]
+    fn vvv(c: State<Testolo>) -> super::StatusChanges {
+        super::StatusChanges::HttpOk(c.ciao())
+    }
 
     #[test]
     fn list_versions_insert_in_cache_when_not_found() {
         let app_name = String::from("name");
         let app_ver = String::from("1.0");
         let key = vec![String::from("versions"), app_name.clone(), app_ver.clone()];
-        let value = vec!["v1".to_string(), "v2".to_string()];
-        let mock_ver = MockVersions::default()
-            .expect_list()
-            .with(predicate::eq(app_name.as_str()), predicate::eq(app_ver.as_str()))
+        let mut mock_ver = MockVersions::default();
+        mock_ver.expect_list()
+            .with(eq("name"), eq("1.0"))
             .times(1)
-            .returning(|n, v| Ok(value.clone()));
-        let mock_cache = MockCache::default()
-            .expect_get_vec()
-            .with(predicate::eq(key.clone()))
+            .returning(|_n, _v| Ok(vec!["v1".to_string(), "v2".to_string()]));
+        let mut mock_cache = MockCache::default();
+        mock_cache.expect_get_vec()
+            .with(eq(key.clone()))
             .times(1)
-            .returning(|v| None);
+            .returning(|_v| None);
         /*mock_cache.expect_insert_vec()
-            .with(predicate::eq(key), predicate::eq(value.clone()))
+            .with(eq(key), eq(value.clone()))
             .times(1);*/
-        let rocket = rocket::ignite().manage(mock_ver).manage(Arc::new(Mutex::new(mock_cache)));
-        let state_cache = State::from(&rocket).unwrap();
-        let state_ver = State::from(&rocket).unwrap();
+        let rocket = rocket::ignite().manage(Arc::new(Mutex::new(mock_cache)));
 
-        list_versions(app_name.clone(), app_ver.clone(), state_cache, state_ver);
+        list_versions(app_name.clone(), app_ver.clone(), State::from(&rocket).unwrap(), State::from(&rocket).unwrap());
+    }
+
+    #[test]
+    fn ciao_test() {
+        let testolo = Testolo{
+            a: 0,
+        };
+        let rocket = rocket::ignite().mount("/", routes![vvv]).manage(testolo);
+
+        vvv(State::from(&rocket).unwrap());
     }
 }
