@@ -2,41 +2,34 @@ use std::collections::HashMap;
 use mockall::*;
 use mockall::predicate::*;
 
-pub struct Cache {
-    cache: HashMap<Vec<String>, Vec<String>>
+#[automock]
+pub trait Cache {
+    fn new() -> dyn Cache;
+    fn get(&self, key: String) -> Option<String>;
+    fn insert(&mut self, key: String, value: String);
+    fn clear(&mut self);
 }
 
-#[automock]
-impl Cache {
-    pub fn new() -> Cache {
-        Cache{
+pub struct HashCache {
+    cache: HashMap<String, String>
+}
+
+impl Cache for HashCache {
+    fn new() -> HashCache {
+        HashCache{
             cache: HashMap::new()
         }
     }
 
-    pub fn get_vec(&self, key: &Vec<String>) -> Option<Vec<String>> {
-        match self.cache.get(key) {
-            Some(val) => Some(val.clone()),
-            None => None
-        }
+    fn get(&self, key: String) -> Option<String> {
+        *self.cache.get(&key)
     }
 
-    pub fn get(&self, key: &Vec<String>) -> Option<String> {
-        match self.cache.get(key) {
-            Some(val) => Some(val[0].to_string()),
-            None => None,
-        }
+    fn insert(&mut self, key: String, value: String) {
+        self.cache.insert(key.to_string(), value.to_string());
     }
 
-    pub fn insert_vec(&mut self, key: Vec<String>, value: Vec<String>) {
-        self.cache.insert(key, value);
-    }
-
-    pub fn insert(&mut self, key: Vec<String>, value: String) {
-        self.cache.insert(key, vec![value]);
-    }
-
-    pub fn clear(&mut self) {
+    fn clear(&mut self) {
         self.cache.clear();
         println!("cache cleared")
     }

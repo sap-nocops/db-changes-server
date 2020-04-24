@@ -11,6 +11,7 @@ pub mod cache;
 use versions::Versions;
 use changes::Changes;
 use cache::Cache;
+use cache::HashCache;
 
 #[derive(Responder)]
 pub enum StatusVersion {
@@ -31,14 +32,17 @@ pub enum StatusChanges {
 }
 
 #[get("/<app_name>/<app_version>")]
-fn list_versions(app_name: String, app_version: String, cache: State<Arc<Mutex<Cache>>>, versions_api: State<Versions>) -> StatusVersion {
-    let key = vec![String::from("versions"), app_name.clone(), app_version.clone()];
+fn list_versions(app_name: String, app_version: String, cache: State<Arc<Mutex<dyn Cache>>>, versions_api: State<Versions>) -> StatusVersion {
+    let key = String::from("versions").push_str(&app_name).push_str(&app_version);
     let mut m_cache = cache.lock().unwrap();
-    match m_cache.get_vec(&key) {
-        Some(val) => StatusVersion::HttpOk(Json(val.clone())),
+    match m_cache.get(&key) {
+        Some(val) => {
+            let split = val.split(",").collect();
+            StatusVersion::HttpOk(Json(split.iter().map(|v| v.to_string()).collect()))
+        },
         None => match versions_api.list(&app_name, &app_version) {
             Ok(versions) => {
-                m_cache.insert_vec(key, versions.clone());
+                m_cache.insert(&key, versions.join(","));
                 if versions.len() == 0 {
                     return StatusVersion::HttpNotFound(format!("app {} {} not found", app_name, app_version));
                 }
@@ -50,14 +54,14 @@ fn list_versions(app_name: String, app_version: String, cache: State<Arc<Mutex<C
 }
 
 #[get("/<app_name>/<db_version>")]
-fn changes(app_name: String, db_version: String, cache: State<'_, Arc<Mutex<Cache>>>, changes_api: State<'_, Changes>) -> StatusChanges {
-    let key = vec![String::from("changes"), app_name.clone(), db_version.clone()];
+fn changes(app_name: String, db_version: String, cache: State<'_, Arc<Mutex<dyn Cache>>>, changes_api: State<'_, Changes>) -> StatusChanges {
+    let key = String::from("changes").push_str(&app_name).push_str(&db_version);
     let mut m_cache = cache.lock().unwrap();
-    match m_cache.get(&key) {
+    match m_cache.get(key) {
         Some(val) => StatusChanges::HttpOk(val),
         None => match changes_api.get(&app_name, &db_version) {
             Ok(val) => {
-                m_cache.insert(key, val.clone());
+                m_cache.insert(key, val.as_str());
                 StatusChanges::HttpOk(val)
             }
             Err(_e) => StatusChanges::HttpNotFound(format!("db version {} of app {}", db_version, app_name)),
@@ -74,7 +78,7 @@ pub struct Api {
 
 impl Api {
     pub fn init(&self) {
-        let cache = Arc::new(Mutex::new(Cache::new()));
+        let cache = Arc::new(Mutex::new(HashCache::new()));
         let cloned_cache = Arc::clone(&cache);
         let refresh_time = self.refresh_time;
         thread::spawn(move || {
@@ -102,26 +106,11 @@ mod tests {
     use cache::MockCache;
     use mockall::predicate::eq;
 
-    struct Testolo {
-        a:i32
-    }
-
-    impl Testolo{
-        fn ciao(&self) -> String {
-            format!("ciao: {}", self.a)
-        }
-    }
-
-    #[get("/")]
-    fn vvv(c: State<Testolo>) -> super::StatusChanges {
-        super::StatusChanges::HttpOk(c.ciao())
-    }
-
     #[test]
     fn list_versions_insert_in_cache_when_not_found() {
         let app_name = String::from("name");
         let app_ver = String::from("1.0");
-        let key = vec![String::from("versions"), app_name.clone(), app_ver.clone()];
+        let key = String::from("versions").push_str(&app_name).push_str(&app_ver);
         let mut mock_ver = MockVersions::default();
         mock_ver.expect_list()
             .with(eq("name"), eq("1.0"))
@@ -138,15 +127,5 @@ mod tests {
         let rocket = rocket::ignite().manage(Arc::new(Mutex::new(mock_cache)));
 
         list_versions(app_name.clone(), app_ver.clone(), State::from(&rocket).unwrap(), State::from(&rocket).unwrap());
-    }
-
-    #[test]
-    fn ciao_test() {
-        let testolo = Testolo{
-            a: 0,
-        };
-        let rocket = rocket::ignite().mount("/", routes![vvv]).manage(testolo);
-
-        vvv(State::from(&rocket).unwrap());
     }
 }
