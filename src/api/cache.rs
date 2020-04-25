@@ -4,8 +4,7 @@ use mockall::predicate::*;
 
 #[automock]
 pub trait Cache {
-    fn new() -> dyn Cache;
-    fn get(&self, key: String) -> Option<String>;
+    fn get(&self, key: &str) -> Option<String>;
     fn insert(&mut self, key: String, value: String);
     fn clear(&mut self);
 }
@@ -14,19 +13,19 @@ pub struct HashCache {
     cache: HashMap<String, String>
 }
 
-impl Cache for HashCache {
-    fn new() -> HashCache {
-        HashCache{
-            cache: HashMap::new()
-        }
+pub fn new_hash_cache() -> HashCache {
+    HashCache{
+        cache: HashMap::new()
     }
+}
 
-    fn get(&self, key: String) -> Option<String> {
-        *self.cache.get(&key)
+impl Cache for HashCache {
+    fn get(&self, key: &str) -> Option<String> {
+        self.cache.get(key).cloned()
     }
 
     fn insert(&mut self, key: String, value: String) {
-        self.cache.insert(key.to_string(), value.to_string());
+        self.cache.insert(key, value);
     }
 
     fn clear(&mut self) {

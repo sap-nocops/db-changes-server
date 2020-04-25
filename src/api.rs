@@ -11,7 +11,7 @@ pub mod cache;
 use versions::Versions;
 use changes::Changes;
 use cache::Cache;
-use cache::HashCache;
+use cache::new_hash_cache;
 
 #[derive(Responder)]
 pub enum StatusVersion {
@@ -32,17 +32,19 @@ pub enum StatusChanges {
 }
 
 #[get("/<app_name>/<app_version>")]
-fn list_versions(app_name: String, app_version: String, cache: State<Arc<Mutex<dyn Cache>>>, versions_api: State<Versions>) -> StatusVersion {
-    let key = String::from("versions").push_str(&app_name).push_str(&app_version);
+fn list_versions(app_name: String, app_version: String, cache: State<Arc<Mutex<Box<dyn Cache + Send>>>>, versions_api: State<Versions>) -> StatusVersion {
+    let mut key = String::from("versions");
+    key.push_str(&app_name);
+    key.push_str(&app_version);
     let mut m_cache = cache.lock().unwrap();
     match m_cache.get(&key) {
         Some(val) => {
-            let split = val.split(",").collect();
+            let split: Vec<&str> = val.split(",").collect();
             StatusVersion::HttpOk(Json(split.iter().map(|v| v.to_string()).collect()))
-        },
+        }
         None => match versions_api.list(&app_name, &app_version) {
             Ok(versions) => {
-                m_cache.insert(&key, versions.join(","));
+                m_cache.insert(key, versions.join(","));
                 if versions.len() == 0 {
                     return StatusVersion::HttpNotFound(format!("app {} {} not found", app_name, app_version));
                 }
@@ -54,14 +56,16 @@ fn list_versions(app_name: String, app_version: String, cache: State<Arc<Mutex<d
 }
 
 #[get("/<app_name>/<db_version>")]
-fn changes(app_name: String, db_version: String, cache: State<'_, Arc<Mutex<dyn Cache>>>, changes_api: State<'_, Changes>) -> StatusChanges {
-    let key = String::from("changes").push_str(&app_name).push_str(&db_version);
+fn changes(app_name: String, db_version: String, cache: State<Arc<Mutex<Box<dyn Cache + Send>>>>, changes_api: State<Changes>) -> StatusChanges {
+    let mut key = String::from("changes");
+    key.push_str(&app_name);
+    key.push_str(&db_version);
     let mut m_cache = cache.lock().unwrap();
-    match m_cache.get(key) {
+    match m_cache.get(&key) {
         Some(val) => StatusChanges::HttpOk(val),
         None => match changes_api.get(&app_name, &db_version) {
             Ok(val) => {
-                m_cache.insert(key, val.as_str());
+                m_cache.insert(key, val.clone());
                 StatusChanges::HttpOk(val)
             }
             Err(_e) => StatusChanges::HttpNotFound(format!("db version {} of app {}", db_version, app_name)),
@@ -78,7 +82,7 @@ pub struct Api {
 
 impl Api {
     pub fn init(&self) {
-        let cache = Arc::new(Mutex::new(HashCache::new()));
+        let cache: Arc<Mutex<Box<dyn Cache + Send>>> = Arc::new(Mutex::new(Box::new(new_hash_cache())));
         let cloned_cache = Arc::clone(&cache);
         let refresh_time = self.refresh_time;
         thread::spawn(move || {
@@ -110,21 +114,24 @@ mod tests {
     fn list_versions_insert_in_cache_when_not_found() {
         let app_name = String::from("name");
         let app_ver = String::from("1.0");
-        let key = String::from("versions").push_str(&app_name).push_str(&app_ver);
+        let mut key = String::from("versions");
+        key.push_str(&app_name);
+        key.push_str(&app_ver);
         let mut mock_ver = MockVersions::default();
         mock_ver.expect_list()
             .with(eq("name"), eq("1.0"))
             .times(1)
             .returning(|_n, _v| Ok(vec!["v1".to_string(), "v2".to_string()]));
         let mut mock_cache = MockCache::default();
-        mock_cache.expect_get_vec()
-            .with(eq(key.clone()))
+        mock_cache.expect_get()
+            .with(eq(key.as_str()))
             .times(1)
             .returning(|_v| None);
         /*mock_cache.expect_insert_vec()
             .with(eq(key), eq(value.clone()))
             .times(1);*/
-        let rocket = rocket::ignite().manage(Arc::new(Mutex::new(mock_cache)));
+        let arc_cache: Arc<Mutex<Box<dyn Cache + Send>>> = Arc::new(Mutex::new(Box::new(mock_cache)));
+        let rocket = rocket::ignite().manage(arc_cache);
 
         list_versions(app_name.clone(), app_ver.clone(), State::from(&rocket).unwrap(), State::from(&rocket).unwrap());
     }
