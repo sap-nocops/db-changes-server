@@ -87,14 +87,7 @@ pub struct Api {
 impl Api {
     pub fn init(&self) {
         let cache: Arc<Mutex<Box<dyn Cache + Send>>> = Arc::new(Mutex::new(Box::new(new_hash_cache())));
-        let cloned_cache = Arc::clone(&cache);
-        let refresh_time = self.refresh_time;
-        thread::spawn(move || {
-            loop {
-                thread::sleep(Duration::from_secs(refresh_time));
-                cloned_cache.lock().unwrap().clear();
-            }
-        });
+        self.clear_cache_periodically(&cache);
         let versions_api : Box<dyn VersionsApi + Send + Sync> = Box::new(new_sqlite_versions_api(&self.db_path));
         let changes: Box<dyn ChangesApi + Send + Sync> = Box::new(new_file_changes_api(&self.apps_path));
         rocket::ignite()
@@ -104,6 +97,17 @@ impl Api {
             .manage(changes)
             .manage(cache)
             .launch();
+    }
+
+    fn clear_cache_periodically(&self, cache: &Arc<Mutex<Box<dyn Cache + Send>>>) {
+        let cloned_cache = Arc::clone(&cache);
+        let refresh_time = self.refresh_time;
+        thread::spawn(move || {
+            loop {
+                thread::sleep(Duration::from_secs(refresh_time));
+                cloned_cache.lock().unwrap().clear();
+            }
+        });
     }
 }
 
@@ -201,5 +205,23 @@ mod tests {
         let rocket = rocket::ignite().manage(arc_cache).manage(box_ver);
 
         changes(app_name.clone(), db_ver.clone(), State::from(&rocket).unwrap(), State::from(&rocket).unwrap());
+    }
+
+    #[test]
+    fn clear_cache() {
+        let api = Api{
+            port: 8000,
+            refresh_time: 1,
+            apps_path: "".to_string(),
+            db_path: "".to_string()
+        };
+        let mut mock_cache = MockCache::default();
+        mock_cache.expect_clear()
+            .times(1)
+            .returning(|| ());
+        let arc_cache: Arc<Mutex<Box<dyn Cache + Send>>> = Arc::new(Mutex::new(Box::new(mock_cache)));
+
+        api.clear_cache_periodically(&arc_cache);
+        thread::sleep(Duration::from_millis(1030));
     }
 }

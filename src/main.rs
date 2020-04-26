@@ -42,7 +42,12 @@ fn main() {
         None => port = 8000,
     }
     match args.refresh_time {
-        Some(x) => refresh_time = x,
+        Some(x) => {
+            if x < 1 {
+                panic!("refresh_time cannot be less than 1 second");
+            }
+            refresh_time = x
+        },
         None => refresh_time = 3600,
     }
     match args.db_path {
