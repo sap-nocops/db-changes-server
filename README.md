@@ -13,7 +13,7 @@ Options:
   --port            server port. default: 8000
   --refresh-time    cache refresh time in seconds. default: 3600
   --db-path         path to db. default: ~/.db-changes/changes.db
-  --changes-path       path to db version changes. default: ~/.db-changes/apps
+  --changes-path    path to db version changes. default: ~/.db-changes/apps
   --help            display usage information
 
 for example: ./db-changes-server --port 9000 --refresh-time 50
