@@ -1,19 +1,26 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::Error;
+use mockall::*;
+use mockall::predicate::*;
 
-pub struct Changes {
+#[automock]
+pub trait ChangesApi {
+    fn get(&self, app_name: &str, db_version: &str) -> Result<String, Error>;
+}
+
+pub fn new_file_changes_api(apps_path: &str) -> FileChangesApi {
+    FileChangesApi {
+        apps_path: apps_path.to_string()
+    }
+}
+
+pub struct FileChangesApi {
     apps_path: String
 }
 
-impl Changes {
-    pub fn new(apps_path: &str) -> Changes {
-        Changes {
-            apps_path: apps_path.to_string()
-        }
-    }
-
-    pub fn get(&self, app_name: &str, db_version: &str) -> Result<String, Error> {
+impl ChangesApi for FileChangesApi {
+    fn get(&self, app_name: &str, db_version: &str) -> Result<String, Error> {
         let mut file = File::open(format!("{}/{}/{}", self.apps_path, app_name, db_version))?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
@@ -27,7 +34,7 @@ mod tests {
 
     #[test]
     fn get_changes_for_app() {
-        let changes_api = Changes {
+        let changes_api = FileChangesApi {
             apps_path: String::from("test_data")
         };
 
@@ -39,7 +46,7 @@ mod tests {
 
     #[test]
     fn error_app_not_found() {
-        let changes_api = Changes {
+        let changes_api = FileChangesApi {
             apps_path: String::from("test_data")
         };
 
@@ -51,7 +58,7 @@ mod tests {
 
     #[test]
     fn error_db_version_not_found() {
-        let changes_api = Changes {
+        let changes_api = FileChangesApi {
             apps_path: String::from("test_data")
         };
 

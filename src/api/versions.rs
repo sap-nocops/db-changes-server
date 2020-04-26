@@ -1,25 +1,28 @@
 use rusqlite::{params, Connection, Error};
 use mockall::*;
-use mockall::predicate::*;
 
 #[derive(Debug)]
 struct DbVersion {
     version: String,
 }
 
-pub struct Versions {
+#[automock]
+pub trait VersionsApi{
+    fn list(&self, app_name: &str, app_version: &str) -> Result<Vec<String>, Error>;
+}
+
+pub struct SqliteVersionsApi {
     db_path: String
 }
 
-#[automock]
-impl Versions {
-    pub fn new(db_path: &str) -> Versions {
-        Versions {
-            db_path: db_path.to_string()
-        }
+pub fn new_sqlite_versions_api(db_path: &str) -> SqliteVersionsApi {
+    SqliteVersionsApi {
+        db_path: db_path.to_string()
     }
+}
 
-    pub fn list(&self, app_name: &str, app_version: &str) -> Result<Vec<String>, Error> {
+impl VersionsApi for SqliteVersionsApi{
+    fn list(&self, app_name: &str, app_version: &str) -> Result<Vec<String>, Error> {
         let conn = Connection::open(&self.db_path)?;
         let mut stmt = conn.prepare("
                     SELECT dv.version FROM apps a JOIN apps_db_versions adv
@@ -45,7 +48,7 @@ mod tests {
 
     #[test]
     fn list_db_versions_for_app() {
-        let version_api = Versions {
+        let version_api = SqliteVersionsApi {
             db_path: String::from("test_data/test.db")
         };
 
@@ -56,7 +59,7 @@ mod tests {
 
     #[test]
     fn empty_when_non_existing_app() {
-        let version_api = Versions {
+        let version_api = SqliteVersionsApi {
             db_path: String::from("test_data/test.db")
         };
 
@@ -67,7 +70,7 @@ mod tests {
 
     #[test]
     fn empty_when_non_existing_app_version() {
-        let version_api = Versions {
+        let version_api = SqliteVersionsApi {
             db_path: String::from("test_data/test.db")
         };
 

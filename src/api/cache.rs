@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use mockall::*;
-use mockall::predicate::*;
 
 #[automock]
 pub trait Cache {
@@ -14,7 +13,7 @@ pub struct HashCache {
 }
 
 pub fn new_hash_cache() -> HashCache {
-    HashCache{
+    HashCache {
         cache: HashMap::new()
     }
 }
@@ -31,5 +30,25 @@ impl Cache for HashCache {
     fn clear(&mut self) {
         self.cache.clear();
         println!("cache cleared")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn insert_get_clear_cache() {
+        let mut cache = new_hash_cache();
+
+        assert_eq!(cache.get("test"), None);
+
+        cache.insert("test".to_string(), "value".to_string());
+
+        assert_eq!(cache.get("test"), Some("value".to_string()));
+
+        cache.clear();
+
+        assert_eq!(cache.get("test"), None);
     }
 }
