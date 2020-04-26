@@ -1,5 +1,6 @@
 use rocket_contrib::json::Json;
 use rocket::State;
+use rocket::config::{Config, Environment};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -90,7 +91,10 @@ impl Api {
         self.clear_cache_periodically(&cache);
         let versions_api : Box<dyn VersionsApi + Send + Sync> = Box::new(new_sqlite_versions_api(&self.db_path));
         let changes: Box<dyn ChangesApi + Send + Sync> = Box::new(new_file_changes_api(&self.apps_path));
-        rocket::ignite()
+        let config = Config::build(Environment::active().unwrap())
+            .port(self.port)
+            .finalize().unwrap();
+        rocket::custom(config)
             .mount("/versions", routes![list_versions])
             .mount("/changes", routes![changes])
             .manage(versions_api)
