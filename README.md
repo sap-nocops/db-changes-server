@@ -28,6 +28,5 @@ for example:
 ```
 ```sql
 CREATE TABLE frattaglie (id int, name varchar);
-INSERT INTO frattaglie (1, 'lampredotto');
+INSERT INTO frattaglie (id, name) VALUES (1, 'lampredotto');
 ```
-
