@@ -20,7 +20,7 @@ struct Arguments {
     /// path to db. default: ~/.db-changes/changes.db
     #[argh(option)]
     db_path: Option<String>,
-    /// path to apps db changes. default: ~/.db-changes/apps
+    /// path to db version changes. default: ~/.db-changes/apps
     #[argh(option)]
     apps_path: Option<String>,
 }
