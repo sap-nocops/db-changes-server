@@ -12,8 +12,8 @@ use std::fs;
 /// Db changes configuration.
 struct Arguments {
     /// server port. default: 8000
-    #[argh(option)]
-    port: Option<u16>,
+    #[argh(option, default="8000")]
+    port: u16,
     /// cache refresh time in seconds. default: 3600
     #[argh(option)]
     refresh_time: Option<u64>,
@@ -32,15 +32,11 @@ fn main() {
         Ok(hd) => user_home = hd.as_path().display().to_string().replace("\"", ""),
         Err(_e) => panic!("Cannot set default db path"),
     }
-    let port: u16;
+    let args: Arguments = argh::from_env();
+    let port: u16 = args.port;
     let refresh_time: u64;
     let apps_path: String;
     let db_path: String;
-    let args: Arguments = argh::from_env();
-    match args.port {
-        Some(x) => port = x,
-        None => port = 8000,
-    }
     match args.refresh_time {
         Some(x) => {
             if x < 1 {
