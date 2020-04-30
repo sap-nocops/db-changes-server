@@ -12,7 +12,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Install nightly
+    - name: Install libsqlite3
+      run: sudo apt-get install libsqlite3-dev
+    - name: Install rust nightly
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
