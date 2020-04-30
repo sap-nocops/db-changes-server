@@ -1,5 +1,7 @@
 ## DB-CHANGES
 
+[![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fsap-nocops%2Fdb-changes-server%2Fbadge%3Fref%3Dmaster&style=flat)](https://actions-badge.atrox.dev/sap-nocops/db-changes-server/goto?ref=master)
+
 Rest api to get versions and changes of your app's database.
 This is projects aim to be a server that provides db modification for your apps.
 The purpose is to let you update db of your app without publishing a new version of the latter
@@ -30,3 +32,10 @@ for example:
 CREATE TABLE frattaglie (id int, name varchar);
 INSERT INTO frattaglie (id, name) VALUES (1, 'lampredotto');
 ```
+
+### Endpoints
+
+The following endpoints are exposed to retrieve the db versions and changes
+
+- /versions/<app_name>/<app_version>
+- /changes/<app_name>/<db_version>
