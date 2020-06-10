@@ -1,4 +1,4 @@
-FROM rust:1.43 as builder
+FROM rustlang/rust:nightly as builder
 WORKDIR /usr/src/db-changes-server
 COPY . .
 RUN cargo install --path .
