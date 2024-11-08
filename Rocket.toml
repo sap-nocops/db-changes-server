@@ -1,0 +1,6 @@
+[debug]
+port = 8000
+
+## set only when compiled in release mode, i.e, `cargo build --release`
+[release]
+port = 8000

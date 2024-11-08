@@ -1,6 +1,4 @@
-#![feature(proc_macro_hygiene, decl_macro)]
 extern crate dirs;
-#[macro_use]
 extern crate rocket;
 
 use argh::FromArgs;
@@ -12,7 +10,7 @@ use std::fs;
 /// Db changes configuration.
 struct Arguments {
     /// server port. default: 8000
-    #[argh(option, default="8000")]
+    #[argh(option, default = "8000")]
     port: u16,
     /// cache refresh time in seconds. default: 3600
     #[argh(option)]
@@ -25,10 +23,10 @@ struct Arguments {
     apps_path: Option<String>,
 }
 
-fn main() {
+#[rocket::main]
+async fn main() {
     let user_home: String;
-    match fs::canonicalize(dirs::home_dir().unwrap())
-    {
+    match fs::canonicalize(dirs::home_dir().unwrap()) {
         Ok(hd) => user_home = hd.as_path().display().to_string().replace("\"", ""),
         Err(_e) => panic!("Cannot set default db path"),
     }
@@ -43,7 +41,7 @@ fn main() {
                 panic!("refresh_time cannot be less than 1 second");
             }
             refresh_time = x
-        },
+        }
         None => refresh_time = 3600,
     }
     match args.db_path {
@@ -54,11 +52,11 @@ fn main() {
         Some(x) => apps_path = x,
         None => apps_path = format!("{}/.db-changes/apps", user_home),
     }
-    let api: Api = Api{
+    let api: Api = Api {
         port,
         refresh_time,
         apps_path,
         db_path,
     };
-    api.init();
+    api.init().launch().await.unwrap();
 }
