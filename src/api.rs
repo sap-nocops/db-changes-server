@@ -162,7 +162,9 @@ mod tests {
         let arc_cache: Arc<Mutex<Box<dyn Cache + Send>>> =
             Arc::new(Mutex::new(Box::new(mock_cache)));
         let box_ver: Box<dyn VersionsApi + Send + Sync> = Box::new(mock_ver);
-        let rocket = rocket::build().manage(arc_cache).manage(box_ver);
+        let rocket = rocket::build()
+            .mount("/versions", routes![list_versions])
+            .manage(arc_cache).manage(box_ver);
 
         let client = Client::tracked(rocket).unwrap();
         let req = client.get(format!(
@@ -190,7 +192,9 @@ mod tests {
         let arc_cache: Arc<Mutex<Box<dyn Cache + Send>>> =
             Arc::new(Mutex::new(Box::new(mock_cache)));
         let box_ver: Box<dyn VersionsApi + Send + Sync> = Box::new(mock_ver);
-        let rocket = rocket::build().manage(arc_cache).manage(box_ver);
+        let rocket = rocket::build()
+            .mount("/versions", routes![list_versions])
+            .manage(arc_cache).manage(box_ver);
 
         let client = Client::tracked(rocket).unwrap();
         let req = client.get(format!(
@@ -229,7 +233,9 @@ mod tests {
         let arc_cache: Arc<Mutex<Box<dyn Cache + Send>>> =
             Arc::new(Mutex::new(Box::new(mock_cache)));
         let box_ver: Box<dyn ChangesApi + Send + Sync> = Box::new(mock_ch);
-        let rocket = rocket::build().manage(arc_cache).manage(box_ver);
+        let rocket = rocket::build()
+            .mount("/changes", routes![list_changes])
+            .manage(arc_cache).manage(box_ver);
 
         let client = Client::tracked(rocket).unwrap();
         let req = client.get(format!("/changes/{}/{}", app_name.clone(), db_ver.clone()));
@@ -252,10 +258,12 @@ mod tests {
         let arc_cache: Arc<Mutex<Box<dyn Cache + Send>>> =
             Arc::new(Mutex::new(Box::new(mock_cache)));
         let box_ver: Box<dyn ChangesApi + Send + Sync> = Box::new(mock_ch);
-        let rocket = rocket::build().manage(arc_cache).manage(box_ver);
+        let rocket = rocket::build()
+            .mount("/changes", routes![list_changes])
+            .manage(arc_cache).manage(box_ver);
 
         let client = Client::tracked(rocket).unwrap();
-        let req = client.get(format!("/changes/{}/{}", app_name.clone(), db_ver.clone()));
+        let req = client.get(format!("/changes/{}/{}", app_name, db_ver));
         let _ = req.dispatch();
     }
 
